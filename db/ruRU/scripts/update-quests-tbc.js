@@ -13,7 +13,7 @@ function parseFirstFile(content) {
         currentIndex = id.match(/\d+/)[0];
         const block = blocks[i + 1];
         if (block) {
-            const titleMatch = block.match(/\["T"\]\s*=\s*"([^"]*)"/);
+            const titleMatch = block.match(/\["T"\]\s*=\s*"((?:[^"\\]|\\.|\\")*)"/);
             if (titleMatch) {
                 entries[currentIndex] = titleMatch[1];
             }
@@ -25,7 +25,7 @@ function parseFirstFile(content) {
 
 function parseSecondFile(content) {
     const entries = {};
-    const matches = content.matchAll(/\[(\d+)\]\s*=\s*{\s*"([^"]*)",/g);
+    const matches = content.matchAll(/\[(\d+)\]\s*=\s*{\s*"((?:[^"\\]|\\.|\\")*)"/g);
 
     for (const match of matches) {
         if (hasCyrillicCharacters(match[2])) {
@@ -43,7 +43,6 @@ function processFiles(firstFilePath, secondFilePath) {
     const firstEntries = parseFirstFile(firstContent);
     const secondEntries = parseSecondFile(secondContent);
 
-    // Create array of all replacements
     const replacements = [];
     Object.entries(secondEntries).forEach(([index, newValue]) => {
         if (firstEntries[index]) {
@@ -55,10 +54,10 @@ function processFiles(firstFilePath, secondFilePath) {
         }
     });
 
-    // Single pass replacement
     let updatedContent = firstContent;
     replacements.forEach(({index, oldValue, newValue}) => {
-        const pattern = `\\[${index}]([\\s\\S]*?)\\["T"\\]\\s*=\\s*"${oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`;
+        const escapedOldValue = oldValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = `\\[${index}]([\\s\\S]*?)\\["T"\\]\\s*=\\s*"${escapedOldValue}"`;
         updatedContent = updatedContent.replace(new RegExp(pattern, 'g'), `[${index}]$1["T"] = "${newValue}"`);
     });
 
@@ -68,8 +67,8 @@ function processFiles(firstFilePath, secondFilePath) {
 
 // Example usage
 const firstFilePath = 'quests-tbc.lua';
-const secondFilePath = 'ruRU.lua';
+const secondFilePath = 'TBC/lookupQuests/ruRU.lua';
 const result = processFiles(firstFilePath, secondFilePath);
 
 // Write the result to a new file
-fs.writeFileSync('items-quests-tbc.txt', result);
+fs.writeFileSync('quests-tbc.txt', result);

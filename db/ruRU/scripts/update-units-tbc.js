@@ -7,45 +7,40 @@ function hasCyrillicCharacters(text) {
 function parseFirstFile(content) {
     const entries = {};
     const lines = content.split('\n');
-
     for (const line of lines) {
-        const match = line.match(/\[(\d+)\]\s*=\s*"(.*?)"/);
+        const match = line.match(/\[(\d+)\]\s*=\s*"((?:[^"\\]|\\.|\\")*)"/);
         if (match) {
             entries[match[1]] = match[2];
         }
     }
-
     return entries;
 }
 
 function parseSecondFile(content) {
     const entries = {};
     const lines = content.split('\n');
-
     for (const line of lines) {
-        const match = line.match(/\[(\d+)\]\s*=\s*{\s*"(.*?)"/);
+        const match = line.match(/\[(\d+)\]\s*=\s*{\s*"((?:[^"\\]|\\.|\\")*)"/);
         if (match && hasCyrillicCharacters(match[2])) {
             entries[match[1]] = match[2];
         }
     }
-
     return entries;
 }
 
 function processFiles(firstFilePath, secondFilePath) {
     const firstContent = fs.readFileSync(firstFilePath, 'utf8');
     const secondContent = fs.readFileSync(secondFilePath, 'utf8');
-
     const firstEntries = parseFirstFile(firstContent);
     const secondEntries = parseSecondFile(secondContent);
 
     const lines = firstContent.split('\n');
     const updatedLines = lines.map(line => {
-        const match = line.match(/\[(\d+)\]\s*=\s*"(.*?)"/);
+        const match = line.match(/\[(\d+)\]\s*=\s*"((?:[^"\\]|\\.|\\")*)"/);
         if (match && secondEntries[match[1]]) {
             const index = match[1];
-            const oldName = match[2];
-            return line.replace(`"${oldName}"`, `"${secondEntries[index]}"`);
+            const oldValue = match[2];
+            return line.replace(`"${oldValue}"`, `"${secondEntries[index]}"`);
         }
         return line;
     });
@@ -55,7 +50,7 @@ function processFiles(firstFilePath, secondFilePath) {
 
 // Example usage
 const firstFilePath = 'units-tbc.lua';
-const secondFilePath = 'ruRU.lua';
+const secondFilePath = 'TBC/lookupNpcs/ruRU.lua';
 const result = processFiles(firstFilePath, secondFilePath);
 
 // Write the result to a new file
